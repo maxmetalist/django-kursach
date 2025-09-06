@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header {% if object.is_blocked %}bg-success{% else %}bg-warning{% endif %} text-white text-center">
+                <h4 class="card-title mb-0">
+                    {% if object.is_blocked %}
+                        Разблокировка пользователя
+                    {% else %}
+                        Блокировка пользователя
+                    {% endif %}
+                </h4>
+            </div>
+            <div class="card-body">
+                <p class="text-center">
+                    Пользователь: <strong>{{ object.user.username }}</strong><br>
+                    Email: <strong>{{ object.user.email }}</strong>
+                </p>
+
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            {{ form.is_blocked }}
+                            <label class="form-check-label" for="{{ form.is_blocked.id_for_label }}">
+                                {% if object.is_blocked %}
+                                    Разблокировать пользователя
+                                {% else %}
+                                    Заблокировать пользователя
+                                {% endif %}
+                            </label>
+                        </div>
+                        {% if form.is_blocked.errors %}
+                            <div class="text-danger">{{ form.is_blocked.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'users:user_list' %}" class="btn btn-secondary me-md-2">Отмена</a>
+                        <button type="submit" class="btn {% if object.is_blocked %}btn-success{% else %}btn-warning{% endif %}">
+                            {% if object.is_blocked %}
+                                Разблокировать
+                            {% else %}
+                                Заблокировать
+                            {% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

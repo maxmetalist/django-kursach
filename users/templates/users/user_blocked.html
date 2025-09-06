@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow text-center">
+            <div class="card-header bg-danger text-white">
+                <h4 class="card-title mb-0">Аккаунт заблокирован</h4>
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <i class="bi bi-lock-fill text-danger" style="font-size: 3rem;"></i>
+                </div>
+
+                <h5 class="text-danger mb-3">Облом! Доступ к системе ограничен (накосячил где-то?)</h5>
+
+                <p class="mb-4">
+                    Твой акк забанил манагер... Ну, что я могу тут сказать... Нефиг было всякую хрень
+                    рассылать. Падай теперь манагеру в ножки, проси помиловать...
+                </p>
+
+                <div class="d-grid gap-2">
+                    <a href="{% url 'users:login' %}" class="btn btn-primary">Вернуться на страницу входа</a>
+                    <a href="{% url 'mailing:home' %}" class="btn btn-outline-secondary">На главную страницу</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

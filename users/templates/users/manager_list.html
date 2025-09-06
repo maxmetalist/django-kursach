@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="bi bi-shield-check"></i> Управление менеджерами</h1>
+        <a href="{% url 'users:user_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Назад к пользователям
+        </a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Список пользователей</h5>
+        </div>
+        <div class="card-body">
+            {% if users %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Имя пользователя</th>
+                            <th>Email</th>
+                            <th>Имя</th>
+                            <th>Фамилия</th>
+                            <th>Статус менеджера</th>
+                            <th>Дата регистрации</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>{{ user.id }}</td>
+                            <td>
+                                <strong>{{ user.username }}</strong>
+                                {% if user.is_superuser %}
+                                    <span class="badge bg-danger ms-1">Суперпользователь</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ user.email|default:"Не указан" }}</td>
+                            <td>{{ user.first_name|default:"-" }}</td>
+                            <td>{{ user.last_name|default:"-" }}</td>
+                            <td>
+                                {% if user.is_staff %}
+                                    <span class="badge bg-success">Менеджер</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Пользователь</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ user.date_joined|date:"d.m.Y H:i" }}</td>
+                            <td>
+                                <form method="post" class="d-inline">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="user_id" value="{{ user.id }}">
+
+                                    {% if user.is_staff and not user.is_superuser %}
+                                        <button type="submit" name="action" value="remove_manager"
+                                                class="btn btn-sm btn-warning"
+                                                onclick="return confirm('Забрать права менеджера у {{ user.username }}?')">
+                                            <i class="bi bi-person-dash"></i> Забрать права
+                                        </button>
+                                    {% elif not user.is_staff %}
+                                        <button type="submit" name="action" value="make_manager"
+                                                class="btn btn-sm btn-success"
+                                                onclick="return confirm('Назначить {{ user.username }} менеджером?')">
+                                            <i class="bi bi-person-plus"></i> Сделать менеджером
+                                        </button>
+                                    {% else %}
+                                        <span class="text-muted">Недоступно</span>
+                                    {% endif %}
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="bi bi-people display-1 text-muted"></i>
+                <h4 class="mt-3">Пользователи не найдены</h4>
+                <p class="text-muted">В системе пока нет зарегистрированных пользователей</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-4">
+            <div class="card text-white bg-success">
+                <div class="card-body text-center">
+                    <h3>{{ managers_count }}</h3>
+                    <p class="mb-0">Менеджеров</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-primary">
+                <div class="card-body text-center">
+                    <h3>{{ users_count }}</h3>
+                    <p class="mb-0">Всего пользователей</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-info">
+                <div class="card-body text-center">
+                    <h3>{{ superusers_count }}</h3>
+                    <p class="mb-0">Суперпользователей</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="bi bi-info-circle"></i> Информация</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Права менеджера:</h6>
+                    <ul class="small">
+                        <li>Доступ к административной панели</li>
+                        <li>Просмотр всех рассылок и клиентов</li>
+                        <li>Блокировка пользователей</li>
+                        <li>Отключение рассылок</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h6>Права суперпользователя:</h6>
+                    <ul class="small">
+                        <li>Все права менеджера</li>
+                        <li>Управление правами других пользователей</li>
+                        <li>Полный доступ ко всем функциям системы</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
