@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header bg-danger text-white text-center">
+                <h4 class="card-title mb-0">Подтверждение удаления</h4>
+            </div>
+            <div class="card-body">
+                <p class="text-center">
+                    Вы уверены, что хотите удалить клиента
+                    <strong>{{object.email}}</strong>?
+                </p>
+
+                <form method="post">
+                    {% csrf_token %}  <!-- ВАЖНО: добавлен CSRF токен -->
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'mailing:client_list' %}" class="btn btn-secondary me-md-2">Отмена</a>
+                        <button type="submit" class="btn btn-danger">Удалить</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
