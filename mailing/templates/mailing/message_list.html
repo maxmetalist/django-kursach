@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Сообщения</h1>
+    <a href="{% url 'mailing:message_create' %}" class="btn btn-success">
+        <i class="bi bi-plus-circle"></i> Добавить сообщение
+    </a>
+</div>
+
+{% if messages %}
+<div class="table-responsive">
+    <table class="table table-striped table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>Тема письма</th>
+                <th>Тело письма</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for message in messages %}
+            <tr>
+                <td class="fw-bold">{{ message.subject }}</td>
+                <td>
+                    <div class="message-preview">
+                        {{ message.body|truncatewords:20 }}
+                    </div>
+                    {% if message.body|wordcount > 20 %}
+                    <small class="text-muted">(показано первых 20 слов)</small>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="btn-group" role="group">
+                        <a href="{% url 'mailing:message_edit' message.pk %}" class="btn btn-sm btn-primary">
+                            <i class="bi bi-pencil"></i> Редактировать
+                        </a>
+                        <a href="{% url 'mailing:message_delete' message.pk %}" class="btn btn-sm btn-danger">
+                            <i class="bi bi-trash"></i> Удалить
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info text-center">
+    <h4>Сообщений пока нет</h4>
+    <p>Создайте первое сообщение для рассылок</p>
+    <a href="{% url 'mailing:message_create' %}" class="btn btn-primary">Создать сообщение</a>
+</div>
+{% endif %}
+
+<div class="mt-4">
+    <div class="card">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Статистика</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="text-center">
+                        <h3>{{ messages.count }}</h3>
+                        <p class="text-muted">Всего сообщений</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="text-center">
+                        <h3>{{ total_mailings }}</h3>
+                        <p class="text-muted">Используется в рассылках</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="text-center">
+                        <h3>{{ active_mailings }}</h3>
+                        <p class="text-muted">Активных рассылок</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

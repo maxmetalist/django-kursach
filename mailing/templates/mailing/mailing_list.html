@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Рассылки</h1>
+    {% if perms.mailing.add_mailing or not user.is_staff %}
+    <a href="{% url 'mailing:mailing_create' %}" class="btn btn-success">
+        <i class="bi bi-plus-circle"></i> Создать рассылку
+    </a>
+    {% endif %}
+</div>
+
+{% if mailings %}
+<div class="table-responsive">
+    <table class="table table-striped table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>ID</th>
+                <th>Статус</th>
+                <th>Сообщение</th>
+                <th>Начало</th>
+                <th>Окончание</th>
+                <th>Клиентов</th>
+                {% if user.is_staff %}
+                <th>Владелец</th>
+                <th>Активна</th>
+                {% endif %}
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for mailing in mailings %}
+            <tr>
+                <td class="fw-bold">#{{ mailing.id }}</td>
+                <td>
+                    <span class="badge
+                        {% if mailing.status == 'Запущена' %}bg-success
+                        {% elif mailing.status == 'Создана' %}bg-warning
+                        {% else %}bg-secondary{% endif %}">
+                        {{ mailing.status }}
+                    </span>
+                </td>
+                <td>
+                    <strong>{{ mailing.message.subject }}</strong>
+                    <br>
+                    <small class="text-muted">{{ mailing.message.body|truncatewords:10 }}</small>
+                </td>
+                <td>{{ mailing.start_time|date:"d.m.Y H:i" }}</td>
+                <td>{{ mailing.end_time|date:"d.m.Y H:i" }}</td>
+                <td>
+                    <span class="badge bg-info">{{ mailing.clients.count }}</span>
+                </td>
+
+                {% if user.is_staff %}
+                <td>
+                    {% if mailing.owner %}
+                        {{ mailing.owner.username }}
+                    {% else %}
+                        <span class="text-muted">Не указан</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if mailing.is_active %}
+                        <span class="badge bg-success">Да</span>
+                    {% else %}
+                        <span class="badge bg-danger">Нет</span>
+                    {% endif %}
+                </td>
+                {% endif %}
+
+                <td>
+                    <div class="btn-group-vertical" role="group">
+                        {# Просмотр - доступен всем #}
+                        <a href="{% url 'mailing:mailing_detail' mailing.pk %}" class="btn btn-sm btn-info mb-1">
+                            <i class="bi bi-eye"></i> Просмотр
+                        </a>
+
+                        {% if user.is_staff %}
+                            {# Менеджеры - только просмотр и управление статусом #}
+                            <button class="btn btn-sm btn-warning mb-1" data-bs-toggle="tooltip"
+                                    title="Менеджеры не могут редактировать рассылки">
+                                <i class="bi bi-pencil"></i> Только просмотр
+                            </button>
+                            <form method="post" action="{% url 'mailing:mailing_toggle' mailing.pk %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm {% if mailing.is_active %}btn-danger{% else %}btn-success{% endif %}">
+                                    <i class="bi bi-power"></i>
+                                    {% if mailing.is_active %}Отключить{% else %}Включить{% endif %}
+                                </button>
+                            </form>
+
+                        {% elif mailing.owner == user %}
+                            {# Владелец - полный доступ #}
+                            <a href="{% url 'mailing:mailing_update' mailing.pk %}" class="btn btn-sm btn-primary mb-1">
+                                <i class="bi bi-pencil"></i> Редактировать
+                            </a>
+                            <a href="{% url 'mailing:mailing_delete' mailing.pk %}" class="btn btn-sm btn-danger">
+                                <i class="bi bi-trash"></i> Удалить
+                            </a>
+
+                        {% else %}
+                            {# Чужие рассылки - только просмотр #}
+                            <span class="text-muted small">Только просмотр</span>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info text-center">
+    <h4>Рассылок пока нет</h4>
+    <p>Создайте первую рассылку для отправки сообщений клиентам</p>
+    {% if not user.is_staff %}
+    <a href="{% url 'mailing:mailing_create' %}" class="btn btn-primary">Создать рассылку</a>
+    {% endif %}
+</div>
+{% endif %}
+
+{# Статистика #}
+<div class="row mt-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary mb-3">
+            <div class="card-body text-center">
+                <h3>{{ mailings.count }}</h3>
+                <p class="mb-0">Всего рассылок</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success mb-3">
+            <div class="card-body text-center">
+                <h3>{{ active_count }}</h3>
+                <p class="mb-0">Активных</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning mb-3">
+            <div class="card-body text-center">
+                <h3>{{ created_count }}</h3>
+                <p class="mb-0">Создано</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-secondary mb-3">
+            <div class="card-body text-center">
+                <h3>{{ completed_count }}</h3>
+                <p class="mb-0">Завершено</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Панель управления для менеджеров #}
+{% if user.is_staff %}
+<div class="card mt-4">
+    <div class="card-header bg-warning">
+        <h5 class="mb-0"><i class="bi bi-shield-check"></i> Панель управления менеджера</h5>
+    </div>
+    <div class="card-body">
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{% url 'users:user_list' %}" class="btn btn-outline-primary">
+                <i class="bi bi-people me-1"></i>Управление пользователями
+            </a>
+            <a href="{% url 'mailing:client_list' %}" class="btn btn-outline-info">
+                <i class="bi bi-person-lines-fill me-1"></i>Все клиенты
+            </a>
+            <a href="{% url 'mailing:message_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-chat-text me-1"></i>Все сообщения
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script>
+// Активация подсказок Bootstrap
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+})
+</script>
+{% endblock %}

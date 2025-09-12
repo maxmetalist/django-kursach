@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h2>Детали рассылки #{{object.pk}}</h2>
+
+            {# Кнопка отправки только для владельца #}
+            {% if object.owner == user or user.is_staff %}
+            <form method="post" action="{% url 'mailing:send_manual' object.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-success">
+                    📧 Отправить сейчас
+                </button>
+            </form>
+            {% endif %}
+        </div>
+
+        <div class="card-body">
+            {# Проверка прав доступа #}
+            {% if object.owner != user and not user.is_staff %}
+                <div class="alert alert-danger">
+                    <h5>Доступ запрещен</h5>
+                    <p>Вы можете просматривать только свои рассылки.</p>
+                    <a href="{% url 'mailing:mailing_list' %}" class="btn btn-secondary">Вернуться к списку</a>
+                </div>
+
+            {% else %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Основная информация</h5>
+                        <p><strong>Название:</strong> {{object.message.subject}}</p>
+                        <p><strong>Статус:</strong> {{ object.get_status_display }}</p>
+                        <p><strong>Периодичность:</strong> {{ object.get_frequency_display }}</p>
+                        <p><strong>Время отправки:</strong> {{ object.send_time }}</p>
+
+                        {# Информация для менеджера #}
+                        {% if user.is_staff %}
+                        <div class="mt-3 p-3 bg-light rounded">
+                            <h6>Информация для менеджера</h6>
+                            <p><strong>Владелец:</strong>
+                                {% if object.owner %}
+                                    {{ object.owner.username }} ({{ object.owner.email }})
+                                {% else %}
+                                    <span class="text-muted">Не указан</span>
+                                {% endif %}
+                            </p>
+                            <p><strong>Активна:</strong>
+                                {% if object.is_active %}
+                                    <span class="badge bg-success">Да</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Нет</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-6">
+                        <h5>Содержание</h5>
+                        <p><strong>Тема:</strong> {{object.subject}}</p>
+                        <p><strong>Сообщение:</strong></p>
+                        <div class="border p-2">
+                            {{ object.message.body }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <h5>Получатели</h5>
+                    {% if object.clients.all %}
+                        <ul class="list-group">
+                            {% for client in object.clients.all %}
+                                <li class="list-group-item">{{ client.email }} - {{ client.full_name }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p>Получатели не указаны</p>
+                    {% endif %}
+                </div>
+
+                <div class="mt-4">
+                    <h5>Статистика</h5>
+                    <p><strong>Создана:</strong> {{ object.created_at }}</p>
+                    {% if object.updated_at %}
+                        <p><strong>Обновлена:</strong> {{object.updated_at }}</p>
+                    {% endif %}
+                    {% if object.last_sent %}
+                        <p><strong>Последняя отправка:</strong> {{object.last_sent }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="mt-4">
+                    <h5>История попыток</h5>
+                    {% if object.attempts.all %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Дата и время</th>
+                                        <th>Статус</th>
+                                        <th>Ответ сервера</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for attempt in object.attempts.all %}
+                                        <tr>
+                                            <td>{{ attempt.attempt_time }}</td>
+                                            <td>
+                                                <span class="badge {% if attempt.status == 'success' %}bg-success{% else %}bg-danger{% endif %}">
+                                                    {{ attempt.get_status_display }}
+                                                </span>
+                                            </td>
+                                            <td>{{ attempt.server_response|truncatechars:100 }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p>Попыток отправки еще не было</p>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+
+        {# Футер с кнопками действий #}
+        <div class="card-footer">
+            <a href="{% url 'mailing:mailing_list' %}" class="btn btn-secondary">← Назад к списку</a>
+
+            {% if object.owner == user and not user.is_staff %}
+                {# Владелец может редактировать и удалять #}
+                <a href="{% url 'mailing:mailing_update' object.pk %}" class="btn btn-primary">Редактировать</a>
+                <a href="{% url 'mailing:mailing_delete' object.pk %}" class="btn btn-danger">Удалить</a>
+
+            {% elif user.is_staff %}
+                {# Менеджер может только управлять активностью #}
+                <form method="post" action="{% url 'mailing:mailing_toggle' object.pk %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn {% if object.is_active %}btn-warning{% else %}btn-success{% endif %}">
+                        {% if object.is_active %}⏸️ Приостановить{% else %}▶️ Возобновить{% endif %}
+                    </button>
+                </form>
+                <a href="{% url 'users:user_list' %}" class="btn btn-outline-primary">Управление пользователями</a>
+
+            {% else %}
+                {# Чужие рассылки - только просмотр #}
+                <span class="text-muted ms-2">Только просмотр</span>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
